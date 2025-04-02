@@ -4,22 +4,19 @@ import { immer } from 'zustand/middleware/immer';
 import localforage from 'localforage';
 import { v4 as uuidv4 } from 'uuid';
 
-// --- ייבוא הטיפוסים העדכניים והמלאים ---
+// --- ייבוא הטיפוסים ---
 import {
   Item,
   Reminder,
-  NewItemData,    // הטיפוס המתוקן
-  UpdateItemData, // הטיפוס המתוקן
+  NewItemData,
+  UpdateItemData,
   NewReminderData,
   UpdateReminderData,
-  ItemStatus,
-  ReminderPriority,
-  ReminderType,
-  SeenMethod,
-  ItemCondition
+  ItemStatus
+  // הוסרו: ReminderPriority, ReminderType, SeenMethod, ItemCondition
 } from '@/types/homi';
 
-// --- הגדרת LocalForage (ללא שינוי) ---
+// --- הגדרת LocalForage ---
 localforage.config({
   name: 'HomiAI',
   storeName: 'homi_data_store',
@@ -27,7 +24,7 @@ localforage.config({
   driver: [localforage.INDEXEDDB, localforage.WEBSQL, localforage.LOCALSTORAGE],
 });
 
-// --- מתאם LocalForage (ללא שינוי) ---
+// --- מתאם LocalForage ---
 const localForageStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
     try {
@@ -48,7 +45,7 @@ const localForageStorage: StateStorage = {
 
 // --- הגדרת טיפוסי המצב (State) והפעולות (Actions) ---
 interface HomiState {
-  items: Item[]; // משתמש ב-Item המעודכן
+  items: Item[];
   reminders: Reminder[];
   isLoading: boolean;
   error: string | null;
@@ -57,8 +54,8 @@ interface HomiState {
 
 interface HomiActions {
   // Item CRUD
-  addItem: (data: NewItemData) => void; // משתמש ב-NewItemData המעודכן
-  updateItem: (id: string, data: UpdateItemData) => void; // משתמש ב-UpdateItemData המעודכן
+  addItem: (data: NewItemData) => void;
+  updateItem: (id: string, data: UpdateItemData) => void;
   deleteItem: (id: string) => void;
   getItemById: (id: string) => Item | undefined;
 
@@ -96,19 +93,15 @@ export const useHomiStore = create<HomiStore>()(
       addItem: (data) => {
         const now = new Date().toISOString();
         const newItem: Item = {
-          // שדות חובה שלא מגיעים מ-NewItemBase
           id: uuidv4(),
           createdAt: now,
           updatedAt: now,
-          // שדות ליבה מ-NewItemBase
           name: data.name,
           roomName: data.roomName,
           location: data.location,
-          // ברירות מחדל / ערכים אוטומטיים לשדות אחרים ב-Item
-          quantity: data.quantity ?? 1, // קח מה-data אם סופק, אחרת 1
-          lastSeenAt: now,              // ברירת מחדל: זמן היצירה
-          seenMethod: 'manual',         // ברירת מחדל: הוספה ידנית
-          // מיזוג שאר השדות האופציונליים מ-NewItemOptional אם סופקו
+          quantity: data.quantity ?? 1,
+          lastSeenAt: now,
+          seenMethod: 'manual',
           category: data.category,
           photoUri: data.photoUri,
           furnitureName: data.furnitureName,
@@ -127,23 +120,20 @@ export const useHomiStore = create<HomiStore>()(
           serialNumber: data.serialNumber,
           color: data.color,
           linkedItemIds: data.linkedItemIds,
-          // שדות נוספים ללא ברירת מחדל כרגע: lastSeenBy, lastMovedFrom
         };
         set((state) => {
           state.items.push(newItem);
           state.error = null;
         });
       },
-
       updateItem: (id, data) => {
         set((state) => {
           const itemIndex = state.items.findIndex((item) => item.id === id);
           if (itemIndex !== -1) {
-            // מיזוג פשוט - דורס רק את השדות שהגיעו ב-data
             state.items[itemIndex] = {
               ...state.items[itemIndex],
               ...data,
-              updatedAt: new Date().toISOString(), // עדכון חובה ל-updatedAt
+              updatedAt: new Date().toISOString(),
             };
             state.error = null;
           } else {
@@ -152,14 +142,12 @@ export const useHomiStore = create<HomiStore>()(
           }
         });
       },
-
       deleteItem: (id) => {
         set((state) => {
           const initialLength = state.items.length;
           state.items = state.items.filter((item) => item.id !== id);
           if(state.items.length < initialLength) {
             state.error = null;
-            // מחיקת תזכורות קשורות - חשוב אם רוצים עקביות
             state.reminders = state.reminders.filter(r => r.itemId !== id);
           } else {
             get().setError(`Item with id ${id} not found for deletion.`);
@@ -167,18 +155,91 @@ export const useHomiStore = create<HomiStore>()(
           }
         });
       },
-
       getItemById: (id) => get().items.find((item) => item.id === id),
 
-      // --- Reminder Actions (מימוש מלא - ללא שינוי מהותי) ---
-      addReminder: (data) => { /* ... (כמו בקוד המלא הקודם) ... */ },
-      updateReminder: (id, data) => { /* ... (כמו בקוד המלא הקודם) ... */ },
-      deleteReminder: (id) => { /* ... (כמו בקוד המלא הקודם) ... */ },
-      getReminderById: (id) => get().reminders.find((reminder) => reminder.id === id),
-      toggleReminderComplete: (id) => { /* ... (כמו בקוד המלא הקודם) ... */ },
-      dismissReminder: (id) => { /* ... (כמו בקוד המלא הקודם) ... */ },
-      // *** להשלמת הקריאות, אני משאיר את פעולות התזכורות מקוצרות כאן ***
-      // *** אנא ודא שהמימוש המלא שלהן נשאר אצלך בקובץ מהגרסה הקודמת ***
+      // --- Reminder Actions (מימוש מלא) ---
+      addReminder: (data: NewReminderData) => {
+        const now = new Date().toISOString();
+        const newReminder: Reminder = {
+          ...data,
+          id: uuidv4(),
+          createdAt: now,
+          updatedAt: now,
+          isComplete: false,
+          dismissed: false,
+        };
+        set((state) => {
+          if (newReminder.itemId && !state.items.some(item => item.id === newReminder.itemId)) {
+            get().setError(`Cannot add reminder: Linked Item with ID "${newReminder.itemId}" does not exist.`);
+            console.warn(`Cannot add reminder: Linked Item with ID "${newReminder.itemId}" does not exist.`);
+            return;
+          }
+          state.reminders.push(newReminder);
+          state.error = null;
+        });
+      },
+      updateReminder: (id: string, data: UpdateReminderData) => {
+        set((state) => {
+          const reminderIndex = state.reminders.findIndex((r) => r.id === id);
+          if (reminderIndex !== -1) {
+            if (data.itemId && !get().items.some(item => item.id === data.itemId)) {
+              get().setError(`Cannot update reminder: New linked Item with ID "${data.itemId}" does not exist.`);
+              console.warn(`Cannot update reminder: New linked Item with ID "${data.itemId}" does not exist.`);
+              return;
+            }
+            state.reminders[reminderIndex] = {
+              ...state.reminders[reminderIndex],
+              ...data,
+              updatedAt: new Date().toISOString(),
+            };
+            state.error = null;
+          } else {
+            get().setError(`Reminder with id ${id} not found for update.`);
+            console.warn(`Reminder with id ${id} not found for update.`);
+          }
+        });
+      },
+      deleteReminder: (id: string) => {
+        set((state) => {
+          const initialLength = state.reminders.length;
+          state.reminders = state.reminders.filter((r) => r.id !== id);
+          if(state.reminders.length < initialLength) {
+            state.error = null;
+          } else {
+            get().setError(`Reminder with id ${id} not found for deletion.`);
+            console.warn(`Reminder with id ${id} not found for deletion.`);
+          }
+        });
+      },
+      getReminderById: (id: string) => get().reminders.find((reminder) => reminder.id === id),
+      toggleReminderComplete: (id: string) => {
+        set((state) => {
+          const reminder = state.reminders.find((r) => r.id === id);
+          if (reminder) {
+            reminder.isComplete = !reminder.isComplete;
+            reminder.updatedAt = new Date().toISOString();
+            state.error = null;
+          } else {
+            get().setError(`Reminder with id ${id} not found for toggle complete.`);
+            console.warn(`Reminder with id ${id} not found for toggle complete.`);
+          }
+        });
+      },
+      dismissReminder: (id: string) => {
+        set((state) => {
+          const reminder = state.reminders.find((r) => r.id === id);
+          if (reminder) {
+            if (!reminder.dismissed) {
+              reminder.dismissed = true;
+              reminder.updatedAt = new Date().toISOString();
+            }
+            state.error = null;
+          } else {
+            get().setError(`Reminder with id ${id} not found for dismissal.`);
+            console.warn(`Reminder with id ${id} not found for dismissal.`);
+          }
+        });
+      },
 
     })), // סיום immer
 
@@ -187,46 +248,67 @@ export const useHomiStore = create<HomiStore>()(
       name: 'homi-app-storage',
       storage: createJSONStorage(() => localForageStorage),
       partialize: (state) => ({
-        items: state.items,       // שומר את מבנה ה-Item המלא
-        reminders: state.reminders, // שומר את מבנה ה-Reminder המלא
+        items: state.items,
+        reminders: state.reminders,
       }),
-      onRehydrateStorage: () => (state, error) => {
-        console.log("🔄 onRehydrateStorage called!");
-        if (state) {
-          state._hasHydrated = true;
-          state.isLoading = false;
-          if (error) {
-            console.error("❌ Failed to rehydrate state from storage:", error);
-            state.error = "Failed to load saved data.";
-          } else {
-            console.log("✅ Hydration finished successfully.");
-            state.error = null;
-          }
-        } else {
-           console.warn("⚠️ Rehydration finished but state draft is undefined.");
-           useHomiStore.setState({ isLoading: false, _hasHydrated: true, error: "Rehydration failed unexpectedly." });
-        }
-      },
+
+      // ===========================================================
+      // --- מימוש onRehydrateStorage האלטרנטיבי (עם setState מיידי) ---
+      // ===========================================================
+       onRehydrateStorage: () => (state, error) => { // state כאן הוא עדיין ה-draft מ-Immer, אך לא נשתמש בו ישירות לעדכון הראשי
+         console.log("🔄 onRehydrateStorage called!");
+
+         // קריאה מפורשת ל-setState כדי לנסות לכפות עדכון על הקומפוננטות המאזינות
+         useHomiStore.setState({
+           _hasHydrated: true,
+           isLoading: false,
+           error: error ? "Failed to load saved data." : null,
+         });
+
+         // עדיין נרשום לוגים לאבחון שגיאות בתהליך ה-persist עצמו
+         if (error) {
+           console.error("❌ Failed to rehydrate state from storage:", error);
+           // אופציונלי: לעדכן גם את ה-draft למקרה שלוגיקה אחרת תלויה בזה מיידית
+           if (state) state.error = "Failed to load saved data.";
+         } else {
+           console.log("✅ Hydration finished successfully.");
+           // אופציונלי: לעדכן גם את ה-draft
+           if (state) state.error = null;
+         }
+       },
       version: 1,
     } // סיום הגדרות Persist
   ) // סיום Persist middleware
 ); // סיום create
 
-// --- Selector Hooks (כולל המותאמים אישית) ---
+// --- Selector Hooks (כולל המותאמים אישית המלאים) ---
 export const useIsHydrated = () => useHomiStore((state) => state._hasHydrated);
 export const useItems = () => useHomiStore((state) => state.items);
 export const useReminders = () => useHomiStore((state) => state.reminders);
 export const useHomiLoading = () => useHomiStore((state) => state.isLoading);
 export const useHomiError = () => useHomiStore((state) => state.error);
 
+// סלקטור מותאם אישית לפריטים מסוננים
 export const useFilteredItems = (status?: ItemStatus, tag?: string) => {
-  // ... (כמו בקוד המלא הקודם) ...
+  return useHomiStore((state) =>
+    state.items.filter((item) => {
+      const statusMatch = !status || item.status === status;
+      const tagMatch = !tag || item.tags?.some(t => t.toLowerCase().includes(tag.toLowerCase().trim()));
+      return statusMatch && tagMatch;
+    })
+  );
 };
+
+// סלקטור מותאם אישית לתזכורות פעילות
 export const useActiveReminders = () => {
-  // ... (כמו בקוד המלא הקודם) ...
-};
+  return useHomiStore((state) =>
+    state.reminders.filter(r => !r.isComplete && !r.dismissed)
+  );
+}
 
 // אופציונלי: הדפסת שינויים ב-store בסביבת פיתוח
 if (process.env.NODE_ENV === 'development') {
-  // ... (כמו בקוד המלא הקודם) ...
+  useHomiStore.subscribe(
+    (state) => console.log('HomiStore update:', state)
+  );
 }
