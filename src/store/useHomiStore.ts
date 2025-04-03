@@ -13,10 +13,9 @@ import {
   NewReminderData,
   UpdateReminderData,
   ItemStatus
-  // הוסרו: ReminderPriority, ReminderType, SeenMethod, ItemCondition
-} from '@/types/homi';
+} from '@/types/homi'; // ודא שהנתיב נכון
 
-// --- הגדרת LocalForage ---
+// --- הגדרת LocalForage (ללא שינוי) ---
 localforage.config({
   name: 'HomiAI',
   storeName: 'homi_data_store',
@@ -24,24 +23,40 @@ localforage.config({
   driver: [localforage.INDEXEDDB, localforage.WEBSQL, localforage.LOCALSTORAGE],
 });
 
-// --- מתאם LocalForage ---
-const localForageStorage: StateStorage = {
+// --- מתאם LocalForage עבור הדפדפן ---
+const browserLocalForageStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
     try {
       const item = await localforage.getItem<string>(name);
       return item ?? null;
     } catch (error) {
-      console.error(`Error getting item ${name} from localforage:`, error);
+      console.error(`❌ Error getting item ${name} from localforage:`, error);
       return null;
     }
   },
   setItem: async (name: string, value: string): Promise<void> => {
-    await localforage.setItem(name, value);
+    try {
+      await localforage.setItem(name, value);
+    } catch (error) {
+       console.error(`❌ Error setting item ${name} in localforage:`, error);
+    }
   },
   removeItem: async (name: string): Promise<void> => {
-    await localforage.removeItem(name);
+    try {
+      await localforage.removeItem(name);
+    } catch (error) {
+       console.error(`❌ Error removing item ${name} from localforage:`, error);
+    }
   },
 };
+
+// --- אחסון "דמה" (No-operation) עבור צד השרת ---
+const noopStorage: StateStorage = {
+  getItem: async () => null,
+  setItem: async () => {},
+  removeItem: async () => {},
+};
+
 
 // --- הגדרת טיפוסי המצב (State) והפעולות (Actions) ---
 interface HomiState {
@@ -89,7 +104,7 @@ export const useHomiStore = create<HomiStore>()(
       clearError: () => set({ error: null }),
       setError: (message) => set({ error: message, isLoading: false }),
 
-      // --- Item Actions (מותאמים לטיפוסים החדשים) ---
+      // --- Item Actions (מימוש מלא מהקוד שלך) ---
       addItem: (data) => {
         const now = new Date().toISOString();
         const newItem: Item = {
@@ -157,7 +172,7 @@ export const useHomiStore = create<HomiStore>()(
       },
       getItemById: (id) => get().items.find((item) => item.id === id),
 
-      // --- Reminder Actions (מימוש מלא) ---
+      // --- Reminder Actions (מימוש מלא מהקוד שלך) ---
       addReminder: (data: NewReminderData) => {
         const now = new Date().toISOString();
         const newReminder: Reminder = {
@@ -243,37 +258,29 @@ export const useHomiStore = create<HomiStore>()(
 
     })), // סיום immer
 
-    // --- הגדרות Persist Middleware ---
+    // --- הגדרות Persist Middleware (עם התיקון) ---
     {
       name: 'homi-app-storage',
-      storage: createJSONStorage(() => localForageStorage),
+      storage: createJSONStorage(() => (
+        typeof window !== 'undefined'
+          ? browserLocalForageStorage // לקוח
+          : noopStorage                // שרת
+      )),
       partialize: (state) => ({
         items: state.items,
         reminders: state.reminders,
       }),
-
-      // ===========================================================
-      // --- מימוש onRehydrateStorage האלטרנטיבי (עם setState מיידי) ---
-      // ===========================================================
-       onRehydrateStorage: () => (state, error) => { // state כאן הוא עדיין ה-draft מ-Immer, אך לא נשתמש בו ישירות לעדכון הראשי
+       onRehydrateStorage: () => (state, error) => {
          console.log("🔄 onRehydrateStorage called!");
-
-         // קריאה מפורשת ל-setState כדי לנסות לכפות עדכון על הקומפוננטות המאזינות
          useHomiStore.setState({
            _hasHydrated: true,
            isLoading: false,
-           error: error ? "Failed to load saved data." : null,
+           error: error ? "Failed to load saved data from storage." : null,
          });
-
-         // עדיין נרשום לוגים לאבחון שגיאות בתהליך ה-persist עצמו
          if (error) {
            console.error("❌ Failed to rehydrate state from storage:", error);
-           // אופציונלי: לעדכן גם את ה-draft למקרה שלוגיקה אחרת תלויה בזה מיידית
-           if (state) state.error = "Failed to load saved data.";
          } else {
-           console.log("✅ Hydration finished successfully.");
-           // אופציונלי: לעדכן גם את ה-draft
-           if (state) state.error = null;
+           console.log("✅ Hydration finished successfully (or skipped on server).");
          }
        },
       version: 1,
@@ -281,32 +288,31 @@ export const useHomiStore = create<HomiStore>()(
   ) // סיום Persist middleware
 ); // סיום create
 
-// --- Selector Hooks (כולל המותאמים אישית המלאים) ---
+// --- Selector Hooks (מימוש מלא מהקוד שלך) ---
 export const useIsHydrated = () => useHomiStore((state) => state._hasHydrated);
 export const useItems = () => useHomiStore((state) => state.items);
 export const useReminders = () => useHomiStore((state) => state.reminders);
 export const useHomiLoading = () => useHomiStore((state) => state.isLoading);
 export const useHomiError = () => useHomiStore((state) => state.error);
 
-// סלקטור מותאם אישית לפריטים מסוננים
 export const useFilteredItems = (status?: ItemStatus, tag?: string) => {
   return useHomiStore((state) =>
     state.items.filter((item) => {
       const statusMatch = !status || item.status === status;
+      // ודא ש-item.tags קיים לפני שקוראים ל-some
       const tagMatch = !tag || item.tags?.some(t => t.toLowerCase().includes(tag.toLowerCase().trim()));
       return statusMatch && tagMatch;
     })
   );
 };
 
-// סלקטור מותאם אישית לתזכורות פעילות
 export const useActiveReminders = () => {
   return useHomiStore((state) =>
     state.reminders.filter(r => !r.isComplete && !r.dismissed)
   );
 }
 
-// אופציונלי: הדפסת שינויים ב-store בסביבת פיתוח
+// אופציונלי: הדפסת שינויים ב-store (כמו שהיה אצלך)
 if (process.env.NODE_ENV === 'development') {
   useHomiStore.subscribe(
     (state) => console.log('HomiStore update:', state)

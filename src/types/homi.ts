@@ -1,31 +1,20 @@
-// ==============================
-// HomiAI Core Types Definition
-// ==============================
+// =============================================
+// HomiAI Core Types (Items, Reminders, etc.)
+// Category types are defined in ./category.ts
+// =============================================
 
 /**
  * סטטוסים אפשריים לפריט במלאי.
- * כולל מצב תפעולי (בשימוש, באחסון) ומצב לוגיסטי (חסר, להחלפה, מלאי).
  */
 export type ItemStatus =
-  | 'in use'
-  | 'in storage'
-  | 'lent out'        // הושאל
-  | 'to replace'      // יש להחליף / נגמר
-  | 'archived'        // הועבר לארכיון (לא בשימוש פעיל)
-  | 'in stock'        // במלאי (רלוונטי למתכלים)
-  | 'low stock'       // מלאי נמוך
-  | 'out of stock';   // אזל מהמלאי
+  | 'in use' | 'in storage' | 'lent out' | 'to replace' | 'archived'
+  | 'in stock' | 'low stock' | 'out of stock';
 
 /**
  * מצב פיזי של הפריט.
  */
 export type ItemCondition =
-  | 'new'
-  | 'like new'
-  | 'good'
-  | 'fair'
-  | 'poor'
-  | 'broken';
+  | 'new' | 'like new' | 'good' | 'fair' | 'poor' | 'broken';
 
 /**
  * שיטת התיעוד האחרונה של הפריט.
@@ -34,70 +23,68 @@ export type SeenMethod = 'manual' | 'auto' | 'camera' | 'scan' | 'unknown';
 
 /**
  * הממשק הראשי המייצג פריט במערכת HomiAI.
- * כולל פרטים בסיסיים, מיקום, סטטוס, מידע "חכם", פרטי רכישה ועוד.
  */
 export interface Item {
   // --- שדות ליבה ---
-  id: string;                   // מזהה ייחודי (נוצר אוטומטית)
-  name: string;                 // שם הפריט (חובה)
-  roomName: string;             // שם החדר הכללי (חובה)
-  location: string;             // מיקום מפורט בחדר (חובה)
-  quantity: number;             // כמות (חובה, ברירת מחדל תיקבע ב-store)
-  createdAt: string;            // תאריך יצירה ISO (נוצר אוטומטית)
-  updatedAt: string;            // תאריך עדכון אחרון ISO (מתעדכן אוטומטית)
+  id: string;                // מזהה ייחודי (נוצר אוטומטית)
+  name: string;               // שם הפריט (חובה)
+  roomName: string;           // שם החדר הכללי (חובה)
+  location: string;           // מיקום מפורט בחדר (חובה)
+  quantity: number;           // כמות (חובה, ברירת מחדל תיקבע ב-store)
+  createdAt: string;          // תאריך יצירה ISO (נוצר אוטומטית)
+  updatedAt: string;          // תאריך עדכון אחרון ISO (מתעדכן אוטומטית)
+
+  // --- קישור לקטגוריה ---
+  categoryId?: string | null; // ID של הקטגוריה, או null אם אין קטגוריה (!!! שונה מ-category)
 
   // --- שדות ליבה אופציונליים ---
-  status?: ItemStatus;          // סטטוס הפריט
-  tags?: string[];              // תגיות לסינון
-  notes?: string;               // הערות טקסט חופשי
+  status?: ItemStatus;        // סטטוס הפריט
+  tags?: string[];            // תגיות לסינון
+  notes?: string;             // הערות טקסט חופשי
 
   // --- שדות חכמים (אופציונליים) ---
-  condition?: ItemCondition;    // מצב פיזי
-  lastSeenAt?: string;          // תאריך ISO של התיעוד האחרון (יכול להתעדכן אוטומטית)
-  seenMethod?: SeenMethod;      // איך תועד (ברירת מחדל 'manual')
-  lastSeenBy?: string;          // מי תיעד אחרון (למערכת רב-משתמשים)
-  lastMovedFrom?: string;       // המיקום הקודם
+  condition?: ItemCondition;  // מצב פיזי
+  lastSeenAt?: string;        // תאריך ISO של התיעוד האחרון
+  seenMethod?: SeenMethod;    // איך תועד (ברירת מחדל 'manual')
+  lastSeenBy?: string;        // מי תיעד אחרון (למערכת רב-משתמשים)
+  lastMovedFrom?: string;     // המיקום הקודם
 
   // --- שדות נוספים (אופציונליים) ---
-  category?: string;            // קטגוריה ראשית
-  photoUri?: string;            // נתיב/URL לתמונה
-  furnitureName?: string;       // שם רהיט ספציפי
-  brand?: string;               // מותג
-  modelNumber?: string;         // מספר דגם
-  serialNumber?: string;        // מספר סידורי
-  color?: string;               // צבע
-  linkedItemIds?: string[];     // מזהים של פריטים מקושרים
+  // category?: string; // <-- הוסר!
+  photoUri?: string;          // נתיב/URL לתמונה
+  furnitureName?: string;     // שם רהיט ספציפי
+  brand?: string;             // מותג
+  modelNumber?: string;       // מספר דגם
+  serialNumber?: string;      // מספר סידורי
+  color?: string;             // צבע
+  linkedItemIds?: string[];   // מזהים של פריטים מקושרים
 
   // --- רכישה ואחריות (אופציונליים) ---
-  purchaseDate?: string;        // תאריך רכישה ISO
-  purchasePrice?: number;       // מחיר רכישה
-  currency?: string;            // מטבע רכישה (e.g., 'ILS', 'USD')
-  storeOrVendor?: string;       // חנות/ספק
-  warrantyEndDate?: string;     // תאריך סיום אחריות ISO
+  purchaseDate?: string;      // תאריך רכישה ISO
+  purchasePrice?: number;     // מחיר רכישה
+  currency?: string;          // מטבע רכישה (e.g., 'ILS', 'USD')
+  storeOrVendor?: string;     // חנות/ספק
+  warrantyEndDate?: string;   // תאריך סיום אחריות ISO
   receiptOrInvoiceUri?: string; // נתיב/URL לקבלה
 
-  // --- שדות עתידיים אפשריים ---
-  // expirationDate?: string;
-  // usageFrequency?: 'daily' | 'weekly' | 'monthly' | 'rarely';
-  // isFavorite?: boolean;
-  // isHidden?: boolean;
-  // locationHistory?: { location: string; date: string; }[];
+  // ... שדות עתידיים אפשריים ...
 }
 
 // ==============================
-// Helper Types for Store Actions
+// Helper Types for Item Store Actions
 // ==============================
 
 /**
  * הטיפוס המשמש ליצירת פריט חדש.
- * דורש את שדות הליבה ההכרחיים, ומאפשר הוספת שדות אופציונליים רלוונטיים ליצירה.
  */
 type NewItemBase = Pick<Item, 'name' | 'roomName' | 'location'>;
+// הרשימה עודכנה לכלול categoryId ולהסיר category
 type NewItemOptional = Partial<Pick<Item,
-    'category' | 'photoUri' | 'furnitureName' | 'tags' | 'status' | 'condition' |
-    'notes' | 'purchaseDate' | 'purchasePrice' | 'currency' | 'storeOrVendor' |
-    'warrantyEndDate' | 'receiptOrInvoiceUri' | 'brand' | 'modelNumber' |
-    'serialNumber' | 'color' | 'linkedItemIds' | 'quantity' // Quantity is optional here, default handled in store
+  'categoryId' | // <-- עודכן
+  'photoUri' | 'furnitureName' | 'tags' | 'status' | 'condition' |
+  'notes' | 'purchaseDate' | 'purchasePrice' | 'currency' | 'storeOrVendor' |
+  'warrantyEndDate' | 'receiptOrInvoiceUri' | 'brand' | 'modelNumber' |
+  'serialNumber' | 'color' | 'linkedItemIds' | 'quantity'
 >>;
 export type NewItemData = NewItemBase & NewItemOptional;
 
@@ -105,6 +92,7 @@ export type NewItemData = NewItemBase & NewItemOptional;
 /**
  * הטיפוס המשמש לעדכון פריט קיים.
  * מאפשר עדכון של כל שדה פרט ל-id ו-createdAt.
+ * כולל כעת גם categoryId כיוון שהוא חלק מ-Item.
  */
 export type UpdateItemData = Partial<Omit<Item, 'id' | 'createdAt'>>;
 
