@@ -6,15 +6,21 @@
 /**
  * סטטוסים אפשריים לפריט במלאי.
  */
-export type ItemStatus =
-  | 'in use' | 'in storage' | 'lent out' | 'to replace' | 'archived'
-  | 'in stock' | 'low stock' | 'out of stock';
+export const availableStatuses = [
+  'in use', 'in storage', 'lent out', 'to replace',
+  'archived', 'in stock', 'low stock', 'out of stock'
+] as const;
+
+export type ItemStatus = typeof availableStatuses[number];
 
 /**
  * מצב פיזי של הפריט.
  */
-export type ItemCondition =
-  | 'new' | 'like new' | 'good' | 'fair' | 'poor' | 'broken';
+export const availableConditions = [
+  'new', 'like new', 'good', 'fair', 'poor', 'broken'
+] as const;
+
+export type ItemCondition = typeof availableConditions[number];
 
 /**
  * שיטת התיעוד האחרונה של הפריט.
@@ -25,75 +31,55 @@ export type SeenMethod = 'manual' | 'auto' | 'camera' | 'scan' | 'unknown';
  * הממשק הראשי המייצג פריט במערכת HomiAI.
  */
 export interface Item {
-  // --- שדות ליבה ---
-  id: string;                // מזהה ייחודי (נוצר אוטומטית)
-  name: string;               // שם הפריט (חובה)
-  roomName: string;           // שם החדר הכללי (חובה)
-  location: string;           // מיקום מפורט בחדר (חובה)
-  quantity: number;           // כמות (חובה, ברירת מחדל תיקבע ב-store)
-  createdAt: string;          // תאריך יצירה ISO (נוצר אוטומטית)
-  updatedAt: string;          // תאריך עדכון אחרון ISO (מתעדכן אוטומטית)
+  // --- Core Fields ---
+  id: string;
+  name: string;
+  roomName: string;
+  location: string;
+  quantity: number;
+  createdAt: string; // ISO Date String
+  updatedAt: string; // ISO Date String
 
-  // --- קישור לקטגוריה ---
-  categoryId?: string | null; // ID של הקטגוריה, או null אם אין קטגוריה (!!! שונה מ-category)
+  // --- Category Link ---
+  categoryId?: string | null;
 
-  // --- שדות ליבה אופציונליים ---
-  status?: ItemStatus;        // סטטוס הפריט
-  tags?: string[];            // תגיות לסינון
-  notes?: string;             // הערות טקסט חופשי
+  // --- Optional Core ---
+  status?: ItemStatus;
+  tags?: string[];
+  notes?: string;
 
-  // --- שדות חכמים (אופציונליים) ---
-  condition?: ItemCondition;  // מצב פיזי
-  lastSeenAt?: string;        // תאריך ISO של התיעוד האחרון
-  seenMethod?: SeenMethod;    // איך תועד (ברירת מחדל 'manual')
-  lastSeenBy?: string;        // מי תיעד אחרון (למערכת רב-משתמשים)
-  lastMovedFrom?: string;     // המיקום הקודם
+  // --- Smart Fields (Optional) ---
+  condition?: ItemCondition;
+  lastSeenAt?: string;
+  seenMethod?: SeenMethod;
+  lastSeenBy?: string;
+  lastMovedFrom?: string;
 
-  // --- שדות נוספים (אופציונליים) ---
-  // category?: string; // <-- הוסר!
-  photoUri?: string;          // נתיב/URL לתמונה
-  furnitureName?: string;     // שם רהיט ספציפי
-  brand?: string;             // מותג
-  modelNumber?: string;       // מספר דגם
-  serialNumber?: string;      // מספר סידורי
-  color?: string;             // צבע
-  linkedItemIds?: string[];   // מזהים של פריטים מקושרים
+  // --- Additional Details (Optional) ---
+  photoUri?: string;
+  furnitureName?: string;
+  brand?: string;
+  modelNumber?: string;
+  serialNumber?: string;
+  color?: string;
+  linkedItemIds?: string[];
 
-  // --- רכישה ואחריות (אופציונליים) ---
-  purchaseDate?: string;      // תאריך רכישה ISO
-  purchasePrice?: number;     // מחיר רכישה
-  currency?: string;          // מטבע רכישה (e.g., 'ILS', 'USD')
-  storeOrVendor?: string;     // חנות/ספק
-  warrantyEndDate?: string;   // תאריך סיום אחריות ISO
-  receiptOrInvoiceUri?: string; // נתיב/URL לקבלה
-
-  // ... שדות עתידיים אפשריים ...
+  // --- Purchase & Warranty (Optional) ---
+  purchaseDate?: string;
+  purchasePrice?: number;
+  currency?: string;
+  storeOrVendor?: string;
+  warrantyEndDate?: string;
+  receiptOrInvoiceUri?: string;
 }
 
 // ==============================
 // Helper Types for Item Store Actions
 // ==============================
 
-/**
- * הטיפוס המשמש ליצירת פריט חדש.
- */
-type NewItemBase = Pick<Item, 'name' | 'roomName' | 'location'>;
-// הרשימה עודכנה לכלול categoryId ולהסיר category
-type NewItemOptional = Partial<Pick<Item,
-  'categoryId' | // <-- עודכן
-  'photoUri' | 'furnitureName' | 'tags' | 'status' | 'condition' |
-  'notes' | 'purchaseDate' | 'purchasePrice' | 'currency' | 'storeOrVendor' |
-  'warrantyEndDate' | 'receiptOrInvoiceUri' | 'brand' | 'modelNumber' |
-  'serialNumber' | 'color' | 'linkedItemIds' | 'quantity'
->>;
-export type NewItemData = NewItemBase & NewItemOptional;
+export type NewItemData = Pick<Item, 'name' | 'roomName' | 'location'> &
+  Partial<Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'name' | 'roomName' | 'location'>>;
 
-
-/**
- * הטיפוס המשמש לעדכון פריט קיים.
- * מאפשר עדכון של כל שדה פרט ל-id ו-createdAt.
- * כולל כעת גם categoryId כיוון שהוא חלק מ-Item.
- */
 export type UpdateItemData = Partial<Omit<Item, 'id' | 'createdAt'>>;
 
 
@@ -105,24 +91,30 @@ export type ReminderPriority = 'low' | 'medium' | 'high';
 
 export type ReminderType =
   | 'maintenance' | 'warranty' | 'shopping' | 'check status'
-  | 'task' | 'note' | 'event';
+  | 'task' | 'note' | 'event' | 'other';
 
+/**
+ * תזכורת הקשורה לפריט או משימה כללית.
+ */
 export interface Reminder {
   id: string;
   title: string;
   dueDate: string; // ISO Date string
+  isComplete: boolean;
+  createdAt: string;
+  itemId?: string;
   isRecurring?: boolean;
-  recurrenceRule?: string; // e.g., RRule string
+  recurrenceRule?: string;
   priority?: ReminderPriority;
   type?: ReminderType;
-  isComplete: boolean;
-  createdAt: string; // ISO Date string
-  updatedAt?: string; // ISO Date string
+  updatedAt?: string;
   dismissed?: boolean;
   notes?: string;
-  itemId?: string; // Optional link to an Item
 }
 
-export type NewReminderData = Omit<Reminder, 'id' | 'createdAt' | 'isComplete' | 'updatedAt' | 'dismissed'>;
+export type NewReminderData = Omit<
+  Reminder,
+  'id' | 'createdAt' | 'isComplete' | 'updatedAt' | 'dismissed'
+>;
 
 export type UpdateReminderData = Partial<Omit<Reminder, 'id' | 'createdAt'>>;

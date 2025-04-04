@@ -2,7 +2,7 @@
 
 import React, { useState, KeyboardEvent } from 'react';
 import { XIcon } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 interface TagInputProps {
   value?: string[];
@@ -24,18 +24,18 @@ export function TagInput({
   chipClassName,
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState<string>("");
-
-  // ===================================================================
-  // <<< הוספנו כאן console.log >>>
-  console.log(">>> TagInput rendered - internal inputValue:", inputValue);
-  // ===================================================================
-
+  // console.log(">>> TagInput rendered - internal inputValue:", inputValue); // הסרנו או הפכנו להערה
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // ======================================================
+    // <<< הוספנו כאן עצירת הפצת האירוע >>>
+    // e.stopPropagation(); // אפשר לנסות להוסיף את זה - אם כי זה לא אמור להיות נחוץ כאן בדרך כלל
+    // ======================================================
+
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       const newTag = inputValue.trim();
@@ -52,15 +52,15 @@ export function TagInput({
     onChange(value.filter((tag) => tag !== tagToRemove));
   };
 
-  // קוד ה-JSX (כולל התיקון הקודם שהסרנו את onClick מה-div)
   return (
     <div
       className={cn(
         "flex flex-wrap items-center gap-2 p-2 border border-input rounded-md bg-background",
         className
       )}
-      // onClick הוּסר מכאן
+      // onClick הוסר בגרסה קודמת
     >
+      {/* הצגת הצ'יפים */}
       {value.map((tag) => (
         <div
           key={tag}
@@ -73,7 +73,7 @@ export function TagInput({
           <button
             type="button"
             onClick={(e) => {
-              e.stopPropagation();
+              e.stopPropagation(); // חשוב להשאיר את זה
               handleRemoveTag(tag);
             }}
             className="ml-1 rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -83,7 +83,9 @@ export function TagInput({
           </button>
         </div>
       ))}
+      {/* שדה הקלט הפנימי */}
       <input
+        key="tag-input-field-static-key" // השארנו את ה-key מהניסיון הקודם
         id={id ?? "tag-input-internal"}
         type="text"
         value={inputValue}
