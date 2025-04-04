@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import slugify from 'slugify';
-import { Category } from '@/features/types.ts/category'; // Adjust import path if needed
+import { Category } from '@/types/category'; // Adjust import path if needed
 
 // Helper function for slug generation (identical to what you use in your store)
 function generateSafeSlug(name: string): string {

@@ -5,14 +5,14 @@ import { useForm, SubmitHandler, Controller, FieldErrors } from 'react-hook-form
 import { zodResolver } from '@hookform/resolvers/zod';
 
 // --- ייבואים ---
-import { addItemSchema, AddItemSchemaType } from '@/features/items/schemas/itemSchema';
-import { useHomiStore } from '@/store/items/store';
+import { addItemSchema, AddItemSchemaType } from '@/lib/schemas/itemSchema';
+import { useHomiStore } from '@/store/useHomiStore';
 // [+] ייבוא הקבועים מהטיפוסים (בהנחה שהעברת אותם לשם)
 import { ItemStatus, ItemCondition, NewItemData, availableStatuses, availableConditions } from '@/types/homi';
 // [+] ייבוא פונקציית העזר מהקובץ שלה
-import { prepareCategoriesForSelect } from '@/features/categories/utils'; // ודא נתיב
-import { useCategoryStore } from '@/store/categories/store';
-import { Category } from '@/types/category';
+import { prepareCategoriesForSelect } from '@/features/utils/categoryUtils'; // ודא נתיב
+import { useCategoryStore } from '@/features/store/categoryStore';
+import { Category } from '@/features/types.ts/category';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
