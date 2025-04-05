@@ -1,0 +1,36 @@
+// src/app/loading.tsx
+import { Skeleton } from "@/components/ui/skeleton"; // נייבא את רכיב הסקלטון
+import { Card, CardContent, CardHeader } from "@/components/ui/card"; // ורכיבי קארד
+
+// קומפוננטת Loading היא תמיד קומפוננטת שרת כברירת מחדל
+export default function Loading() {
+  // אפשר להציג כל UI שתרצה כאן
+  return (
+    <div className="flex justify-center items-center min-h-screen p-8">
+       {/* דוגמה לשימוש בסקלטון כמו בטופס שלנו */}
+       <Card className="max-w-xl w-full mx-auto animate-pulse">
+         <CardHeader>
+           <Skeleton className="h-8 w-3/4" />
+         </CardHeader>
+         <CardContent className="space-y-6">
+           <div className="space-y-4">
+             <Skeleton className="h-5 w-1/4" />
+             <Skeleton className="h-10 w-full" />
+           </div>
+            <div className="space-y-4">
+             <Skeleton className="h-5 w-1/4" />
+             <Skeleton className="h-10 w-full" />
+           </div>
+           <div className="space-y-4">
+             <Skeleton className="h-5 w-1/4" />
+             <Skeleton className="h-10 w-full" />
+           </div>
+            <div className="space-y-4">
+             <Skeleton className="h-5 w-1/4" />
+             <Skeleton className="h-10 w-full" />
+           </div>
+         </CardContent>
+       </Card>
+     </div>
+   );
+}

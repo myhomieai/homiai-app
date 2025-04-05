@@ -1,183 +1,103 @@
-
 /**
- * src/types/category.ts
- *
- * Contains TypeScript interfaces and types related to Category data.
- * This version merges the new fields (aiHints, embedding, externalReferences, etc.)
- * with the existing Category definition.
+ * Defines the core data structure for a Category in HomiAI.
+ * This interface reflects all current and future-supported properties.
+ * It is tightly coupled with validation schemas (e.g., fullCategorySchema)
+ * and used throughout the store, import/export, UI, and APIs.
  */
-
-// ==============================
-// HomiAI Category Types (v1.0)
-// ==============================
-
 export interface Category {
-  id: string;
-  name: string;
-  slug: string;
+  // --- Identification & Hierarchy ---
+  id: string;                        // Unique UUID for the category
+  name: string;                     // Display name of the category
+  slug: string;                     // URL-friendly slug (unique within siblings)
+  parentId: string | null;          // Parent category ID, null for root
+  path: string;                     // Full slug path (e.g., "electronics/audio/headphones")
+  depth: number;                    // Hierarchy level (root = 0)
 
-  /**
-   * Parent category ID (optional). If omitted or null, this category is at the root level.
-   */
-  parentId?: string | null;
+  // --- Metadata & Presentation ---
+  icon?: string;                    // Optional icon (emoji, name, etc.)
+  description?: string;             // Optional rich description
+  sortOrder?: number;               // Ordering among siblings
+  localizedNames?: Record<string, string>; // Translations, e.g., { "en": "Books", "he": "ספרים" }
+  aliases?: Record<string, string[]>;       // Synonyms per locale/context
+  facets?: Record<string, string | boolean | number>; // Extra metadata for filters/search
 
-  /**
-   * Hierarchical path, such as "food/beverages/tea" or just "electronics".
-   */
-  path: string;
+  // --- Structure & Relations ---
+  pathIds?: string[];               // Ancestor IDs + self
+  relatedCategoryIds?: string[];   // Semantic links to other categories
+  isLeaf?: boolean;                // True if no active children
 
-  /**
-   * Array of ancestor IDs (optional). E.g. ["rootId", "foodId", "beverageId"] if needed.
-   */
-  pathIds?: string[];
+  // --- State & Behavior ---
+  version?: number;                // Revision number (incremented on update)
+  archived?: boolean;              // Soft-delete indicator
+  hidden?: boolean;                // Hidden from UI (not deleted)
+  isSystemCategory?: boolean;     // True for built-in, immutable categories
+  orphanPolicy?: 'prevent-delete' | 'cascade' | 'reassign-root'; // Children behavior on deletion
+  hierarchyType?: string;         // Optional tag for tree views (e.g., location vs. category)
+  accessControl?: any;            // Placeholder for future permissions (ACL/RBAC/etc.)
 
-  /**
-   * Depth in the hierarchy (e.g. 0 for root, 1 for children, 2 for grandchildren, etc.).
-   */
-  depth: number;
-
-  /**
-   * Sorting index or priority (optional).
-   */
-  sortOrder?: number;
-
-  /**
-   * Optional icon reference, can be a string indicating a particular icon asset or URI.
-   */
-  icon?: string;
-
-  /**
-   * Human-readable description for the category.
-   */
-  description?: string;
-
-  /**
-   * Indicates whether this category currently has no active children.
-   */
-  isLeaf?: boolean;
-
-  /**
-   * Whether this category is system-defined (non-removable) or user-created.
-   */
-  isSystemCategory?: boolean;
-
-  /**
-   * Whether this category is hidden from normal views.
-   */
-  hidden?: boolean;
-
-  /**
-   * Whether this category is archived (soft-deleted).
-   */
-  archived?: boolean;
-
-  /**
-   * A map of locale => translated name. e.g. { "en": "Food", "he": "אוכל" }
-   */
-  localizedNames?: Record<string, string>;
-
-  /**
-   * Array of category IDs related to this category (associations or synonyms).
-   */
-  relatedCategoryIds?: string[];
-
-  /**
-   * A map of different alias "types" to arrays of alternative names. e.g. { "common": ["Groceries"] }
-   */
-  aliases?: Record<string, string[]>;
-
-  /**
-   * Additional "facets" or metadata relevant to the category.
-   * Could be key-value pairs describing category properties (e.g., "temperature": "cold").
-   */
-  facets?: Record<string, string | boolean | number>;
-
-  /**
-   * A string describing the type of hierarchy used by this category (e.g. "product-type").
-   */
-  hierarchyType?: string;
-
-  /**
-   * Hints from AI about how or why this category was auto-assigned.
-   */
+  // --- AI & Smart Features ---
   aiHints?: {
-    autoSuggested?: boolean;
+    autoSuggested?: boolean;       // True if system-suggested
     basedOn?: 'image' | 'barcode' | 'description' | 'llm';
-    confidence?: number;
+    confidence?: number;           // Confidence score (0–1)
   };
-
-  /**
-   * A vector embedding for advanced AI retrieval, classification, or similarity.
-   */
-  embedding?: number[];
-
-  /**
-   * References to external data sources such as Wikidata, Schema.org, etc.
-   */
+  embedding?: number[];            // Vector for ML-based matching
   externalReferences?: {
-    wikidata?: string;
-    schemaOrg?: string;
+    wikidata?: string;             // External knowledge graph link
+    schemaOrg?: string;            // Schema.org identifier
+    [key: string]: string | undefined;
   };
 
-  /**
-   * Incremented every time the category is updated.
-   */
-  version?: number;
-
-  /**
-   * Defines how to handle orphaned children when deleting a category:
-   * 'prevent-delete' | 'cascade' | 'reassign-root'.
-   */
-  orphanPolicy?: 'cascade' | 'reassign-root' | 'prevent-delete';
-
-  /**
-   * Timestamps
-   */
-  createdAt: string;  // e.g. ISO string
-  updatedAt: string;  // e.g. ISO string
+  // --- Timestamps ---
+  createdAt: string;               // ISO timestamp of creation
+  updatedAt: string;               // ISO timestamp of last update
 }
 
-// ============ Additional Types =============
-
 /**
- * Used when creating a new category; excludes auto-generated fields like ID, slug, path, etc.
+ * Data required when creating a new category.
+ * Used by UI forms and the addCategory store method.
+ * Excludes computed/auto-generated fields.
  */
 export type NewCategoryData = {
   name: string;
-  parentId?: string | null;
+  parentId?: string | null; // Optional parent (null = root)
   icon?: string;
   description?: string;
-  hierarchyType?: string;
+  sortOrder?: number;
   localizedNames?: Record<string, string>;
   facets?: Record<string, string | boolean | number>;
-  relatedCategoryIds?: string[];
   aliases?: Record<string, string[]>;
+  relatedCategoryIds?: string[];
+  hierarchyType?: string;
 };
 
 /**
- * Used for partial updates of an existing category.
- * Omits fields we do NOT allow the user to update directly (ID, slug, path, etc.).
- * Uses Partial to make all fields optional, but excludes certain fields from any updates.
+ * Partial update payload for an existing category.
+ * Restricted to editable fields only.
  */
 export type UpdateCategoryData = Partial<
   Omit<
     Category,
     | 'id'
-    | 'createdAt'
-    | 'updatedAt'
-    | 'slug'
-    | 'path'
-    | 'pathIds'
-    | 'depth'
-    | 'version'
-    | 'parentId'
+    | 'parentId'   // Use moveCategory action
+    | 'slug'       // System-managed
+    | 'path'       // System-managed
+    | 'depth'      // System-managed
+    | 'createdAt'  // Set once
+    | 'updatedAt'  // Auto-managed
+    | 'version'    // Auto-incremented
+    | 'isLeaf'     // Derived from children
+    | 'pathIds'    // System-managed
+    | 'itemCount'  // Not part of this model
+    | 'embedding'  // Managed separately
   >
 >;
 
 /**
- * Payload for moving a category under a different parent.
+ * Payload for moving a category in the hierarchy.
+ * Triggers updates to parentId, path, depth, slug, etc.
  */
 export type MoveCategoryData = {
   categoryId: string;
-  newParentId: string | null;
+  newParentId: string | null; // null for moving to root
 };

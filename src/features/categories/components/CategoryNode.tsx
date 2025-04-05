@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import { Category } from "@/features/types.ts/category";
-import { useCategoryStore } from "@/features/store/categoryStore";
+import { Category } from "@/types/category";
+import { useCategoryStore } from "@/store/categories/store";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
 

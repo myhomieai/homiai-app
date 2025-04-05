@@ -2,16 +2,44 @@
 "use client";
 
 // --- ייבוא הקומפוננטות מהמיקום החדש (עם default import) ---
-import ItemList from "@/features/items/components/ItemList";         // <-- תוקן ל-default import
-import AddItemForm from "@/features/items/components/AddItemForm";   // <-- תוקן ל-default import
-// -----------------------------------------------------------
+import ItemList from "@/features/items/components/ItemList";         // ✅ תקין
+import AddItemForm from '@/features/items/components/AddItemForm';// -----------------------------------------------------------
 
-// ייבואים שהיו בהערה נשארים בהערה
-// import { useEffect } from 'react';
-// import localforage from 'localforage';
+// [+] ייבוא לצורך בדיקת localforage
+import { useEffect } from 'react';
+import localforage from 'localforage';
+// ---------------------------------
 
 export default function Page() {
-  // קוד ה-useEffect לבדיקת LocalForage הוסר
+
+  // [+] קוד ה-useEffect לבדיקת LocalForage נוסף כאן
+  useEffect(() => {
+    const testLocalForage = async () => {
+      try {
+        // הדפסה לקונסול כדי שנוכל לעקוב
+        console.log('>>> [TEST] Attempting localforage.setItem...');
+        await localforage.setItem('homiTestKey', 'homiTestValue');
+        console.log('>>> [TEST] localforage.setItem succeeded.');
+
+        console.log('>>> [TEST] Attempting localforage.getItem...');
+        const value = await localforage.getItem('homiTestKey');
+        console.log('>>> [TEST] localforage.getItem succeeded. Value:', value);
+
+        console.log('>>> [TEST] Attempting localforage.removeItem...');
+        await localforage.removeItem('homiTestKey');
+        console.log('>>> [TEST] localforage.removeItem succeeded.');
+
+        console.log('✅✅✅ Direct localforage test PASSED! ✅✅✅');
+
+      } catch (err) {
+        // אם נגיע לכאן - זו הבעיה!
+        console.error('❌❌❌ Direct localforage test FAILED:', err);
+      }
+    };
+    // הרץ את הבדיקה פעם אחת כשהקומפוננטה נטענת בצד הלקוח
+    testLocalForage();
+  }, []); // המערך הריק מבטיח ריצה חד-פעמית אחרי Mount
+  // ----------------------------------------------------
 
   // החלק שמחזיר את ממשק המשתמש (JSX)
   return (

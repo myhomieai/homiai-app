@@ -6,7 +6,7 @@
  */
 
 import slugify from 'slugify'; // ודא שהתקנת: npm install slugify @types/slugify -D
-import { Category } from '@/features/types.ts/category'; // ודא שהנתיב נכון
+import { Category } from '@/types/category'; // ודא שהנתיב נכון
 
 /**
  * Convert an array of Category objects to a Record keyed by category ID.

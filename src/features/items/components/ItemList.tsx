@@ -7,7 +7,7 @@ import {
   useIsHydrated,
   useHomiLoading,
   useHomiError,
-} from "@/store/useHomiStore";
+} from "@/store/items/store";
 import { Item, ItemStatus } from "@/types/homi";
 
 // רשימות וטיפוסים קבועים
